@@ -64,7 +64,27 @@ jobs:
           name: YadAvar-debug-apk
           path: YadAvar-debug.apk
           if-no-files-found: error
+      - name: Decode keystore
+        if: github.event_name != 'pull_request'
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
 
+      - name: Build Release APK
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Upload Release APK
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: YadAvar-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
